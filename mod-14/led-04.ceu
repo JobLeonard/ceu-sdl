@@ -1,0 +1,108 @@
+#ifndef ALL
+
+native do
+    ##define SDL_MATH
+end
+
+#include "sdl.ceu"
+#include "sdl-gfx.ceu"
+
+input void SDL_REDRAW;
+input void SDL_QUIT;
+input _SDL_MouseButtonEvent* SDL_MOUSEBUTTONDOWN;
+
+var int win_w;
+var int win_h;
+var _SDL_Window* win;
+    finalize
+        win = _SDL_CreateWindow("LED - 04 (two)",
+                _SDL_WINDOWPOS_UNDEFINED, _SDL_WINDOWPOS_UNDEFINED,
+                640, 480, _SDL_WINDOW_SHOWN);
+    with
+        _SDL_DestroyWindow(win);
+    end
+
+_SDL_GetWindowSize(win, &win_w, &win_h);
+
+var _SDL_Renderer* ren;
+    finalize
+        ren = _SDL_CreateRenderer(win, -1, 0);
+    with
+        _SDL_DestroyRenderer(ren);
+    end
+
+#else
+
+_SDL_SetWindowTitle(win, "LED - 04 (two)");
+
+#endif
+
+par/or do
+    await SDL_QUIT;
+with
+    every SDL_REDRAW do
+        _boxRGBA(ren, 0,0,win_w,win_h, 0xCC,0xCC,0xCC,0xFF);
+    end
+with
+    var _SDL_Point p;
+        p.x = 100;
+        p.y = 100;
+    var bool on? = false;
+    par do
+        loop do
+            par/or do
+                loop do
+                    await 500ms;
+                    on? = not on?;
+                end
+            with
+                var _SDL_MouseButtonEvent* m = await SDL_MOUSEBUTTONDOWN
+                                               until _SDL_Circle_vs_Mouse(&p,50,m);
+            end
+            await 2s;
+        end
+    with
+        every SDL_REDRAW do
+            _filledCircleRGBA(ren, p.x,p.y,50, 0xFF,0xFF,0xFF,0xFF);
+            if on? then
+                _filledCircleRGBA(ren, p.x,p.y,47, 0x00,0x88,0x00,0xFF);
+            else
+                _filledCircleRGBA(ren, p.x,p.y,47, 0x00,0x00,0x00,0xFF);
+            end
+        end
+    end
+with
+    var _SDL_Point p;
+        p.x = 250;
+        p.y = 100;
+    var bool on? = false;
+    par do
+        loop do
+            par/or do
+                loop do
+                    await 500ms;
+                    on? = not on?;
+                end
+            with
+                var _SDL_MouseButtonEvent* m = await SDL_MOUSEBUTTONDOWN
+                                               until _SDL_Circle_vs_Mouse(&p,50,m);
+            end
+            await 2s;
+        end
+    with
+        every SDL_REDRAW do
+            _filledCircleRGBA(ren, p.x,p.y,50, 0xFF,0xFF,0xFF,0xFF);
+            if on? then
+                _filledCircleRGBA(ren, p.x,p.y,47, 0x00,0x88,0x00,0xFF);
+            else
+                _filledCircleRGBA(ren, p.x,p.y,47, 0x00,0x00,0x00,0xFF);
+            end
+        end
+    end
+with
+    every SDL_REDRAW do
+        _SDL_RenderPresent(ren);
+    end
+end
+
+escape 0;

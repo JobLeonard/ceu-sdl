@@ -1,0 +1,99 @@
+#ifndef ALL
+
+native do
+    ##define SDL_MATH
+end
+
+#include "sdl.ceu"
+#include "sdl-gfx.ceu"
+
+input void SDL_REDRAW;
+input void SDL_QUIT;
+input _SDL_MouseButtonEvent* SDL_MOUSEBUTTONDOWN;
+
+var int win_w;
+var int win_h;
+var _SDL_Window* win;
+    finalize
+        win = _SDL_CreateWindow("LED - 06 (vector)",
+                _SDL_WINDOWPOS_UNDEFINED, _SDL_WINDOWPOS_UNDEFINED,
+                640, 480, _SDL_WINDOW_SHOWN);
+    with
+        _SDL_DestroyWindow(win);
+    end
+
+_SDL_GetWindowSize(win, &win_w, &win_h);
+
+var _SDL_Renderer[] ren;
+    finalize
+        ren = _SDL_CreateRenderer(win, -1, 0);
+    with
+        _SDL_DestroyRenderer(ren);
+    end
+
+#else
+
+_SDL_SetWindowTitle(win, "LED - 06 (vector)");
+
+#endif
+
+class Blink with
+    var _SDL_Renderer[] ren;
+    var _SDL_Point p;
+do
+    var bool on? = false;
+    par do
+        loop do
+            par/or do
+                loop do
+                    await 500ms;
+                    on? = not on?;
+                end
+            with
+                var _SDL_MouseButtonEvent* m = await SDL_MOUSEBUTTONDOWN
+                                               until _SDL_Circle_vs_Mouse(&p,50,m);
+            end
+            await 2s;
+        end
+    with
+        every SDL_REDRAW do
+            _filledCircleRGBA(ren, p.x,p.y,50, 0xFF,0xFF,0xFF,0xFF);
+            if on? then
+                _filledCircleRGBA(ren, p.x,p.y,47, 0x00,0x88,0x00,0xFF);
+            else
+                _filledCircleRGBA(ren, p.x,p.y,47, 0x00,0x00,0x00,0xFF);
+            end
+        end
+    end
+end
+
+par/or do
+    await SDL_QUIT;
+with
+    every SDL_REDRAW do
+        _boxRGBA(ren, 0,0,win_w,win_h, 0xCC,0xCC,0xCC,0xFF);
+    end
+with
+    var int i = 0;
+    var int x = 100;
+    var int y = 100;
+    var Blink[6] bs with
+        this.ren = ren;
+        if i == 3 then
+            x = 100;
+            y = 250;
+        end
+        this.p.x = x;
+        this.p.y = y;
+        x = x + 150;
+        i = i + 1;
+    end;
+
+    await FOREVER;
+with
+    every SDL_REDRAW do
+        _SDL_RenderPresent(ren);
+    end
+end
+
+escape 0;
